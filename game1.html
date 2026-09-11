@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tense Slayer RPG</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --accent: #e94560;
+            --text: #e9ecef;
+            --success: #4e9a06;
+            --danger: #a40000;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 2px solid #0f3460;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        /* UI Elements */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+
+        .hp-container {
+            width: 100%;
+            background: #333;
+            height: 20px;
+            border-radius: 10px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .hp-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.5s ease-in-out;
+        }
+
+        #enemy-hp-fill { background-color: var(--danger); }
+        #player-hp-fill { background-color: var(--success); }
+
+        /* Screens */
+        .screen { animation: fadeIn 0.5s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        button {
+            background: #0f3460;
+            color: white;
+            border: 1px solid var(--accent);
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: var(--accent);
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            margin: 10px 0;
+        }
+
+        /* Battle Log */
+        #battle-log {
+            font-style: italic;
+            color: #aaa;
+            height: 40px;
+            margin: 10px 0;
+        }
+
+        .question-card {
+            background: #0f3460;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .dice-roll-anim {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: gold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen">
+        <h1>Tense Slayer</h1>
+        <p>Defeat the monsters by mastering English Tenses!</p>
+        <p>Select Difficulty:</p>
+        <button onclick="startGame('easy')">Easy (30 HP)</button>
+        <button onclick="startGame('medium')">Medium (60 HP)</button>
+        <button onclick="startGame('hard')">Hard (100 HP)</button>
+    </div>
+
+    <!-- BATTLE SCREEN -->
+    <div id="battle-screen" class="screen hidden">
+        <div class="stats-bar">
+            <div style="width: 45%;">
+                <span>Enemy HP</span>
+                <div class="hp-container"><div id="enemy-hp-fill" class="hp-fill"></div></div>
+                <span id="enemy-hp-text">100/100</span>
+            </div>
+            <div style="width: 45%;">
+                <span>Your HP</span>
+                <div class="hp-container"><div id="player-hp-fill" class="hp-fill"></div></div>
+                <span id="player-hp-text">50/50</span>
+            </div>
+        </div>
+
+        <div id="battle-log">A wild monster appears!</div>
+        <div id="dice-display" class="dice-roll-anim"></div>
+
+        <div id="question-area">
+            <!-- Questions will be injected here -->
+        </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="end-screen" class="screen hidden">
+        <h1 id="end-title">Victory!</h1>
+        <p id="end-message"></p>
+        <button onclick="location.reload()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    // 20 Questions Bank
+    const questionBank = [
+        { q: "She ___ (eat) breakfast every morning.", options: ["eats", "is eating", "ate"], correct: 0 },
+        { q: "They ___ (watch) a movie right now.", options: ["watch", "are watching", "watched"], correct: 1 },
+        { q: "I ___ (finish) my homework yesterday.", options: ["finish", "finishing", "finished"], correct: 2 },
+        { q: "We ___ (live) here since 2010.", options: ["have lived", "live", "are living"], correct: 0 },
+        { q: "He ___ (go) to Paris next summer.", options: ["goes", "will go", "went"], correct: 1 },
+        { q: "Look! The cat ___ (climb) that tree.", options: ["climbs", "is climbing", "climbed"], correct: 1 },
+        { q: "By the time we arrived, the train ___ (leave).", options: ["leaves", "has left", "had left"], correct: 2 },
+        { q: "___ you ever ___ (be) to Japan?", options: ["Do/be", "Have/been", "Did/be"], correct: 1 },
+        { q: "Water ___ (boil) at 100 degrees Celsius.", options: ["boils", "is boiling", "boiled"], correct: 0 },
+        { q: "While I ___ (cook), the phone rang.", options: ["cook", "was cooking", "cooked"], correct: 1 },
+        { q: "She ___ (not/see) him for two weeks.", options: ["didn't see", "hasn't seen", "doesn't see"], correct: 1 },
+        { q: "I ___ (work) on this project all day.", options: ["have been working", "work", "am working"], correct: 0 },
+        { q: "Tomorrow, I ___ (meet) my boss at 10 AM.", options: ["meet", "am meeting", "met"], correct: 1 },
+        { q: "They ___ (play) football when it started to rain.", options: ["were playing", "are playing", "played"], correct: 0 },
+        { q: "If it rains, we ___ (stay) at home.", options: ["stay", "will stay", "would stay"], correct: 1 },
+        { q: "Last year, I ___ (travel) to Italy.", options: ["travel", "have traveled", "traveled"], correct: 2 },
+        { q: "He ___ (always/lose) his keys! It's annoying.", options: ["always loses", "is always losing", "lost"], correct: 1 },
+        { q: "How long ___ you ___ (study) English?", options: ["do/study", "have/been studying", "are/studying"], correct: 1 },
+        { q: "The sun ___ (rise) in the east.", options: ["rises", "is rising", "rose"], correct: 0 },
+        { q: "I ___ (read) that book three times already.", options: ["read", "have read", "am reading"], correct: 1 }
+    ];
+
+    let gameState = {
+        playerHP: 50,
+        maxPlayerHP: 50,
+        enemyHP: 0,
+        maxEnemyHP: 0,
+        difficulty: '',
+        questionsUsed: [],
+        currentQuestions: []
+    };
+
+    const screens = {
+        start: document.getElementById('start-screen'),
+        battle: document.getElementById('battle-screen'),
+        end: document.getElementById('end-screen')
+    };
+
+    function showScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function startGame(difficulty) {
+        gameState.difficulty = difficulty;
+        gameState.questionsUsed = [];
+        gameState.playerHP = 50;
+        
+        if(difficulty === 'easy') gameState.maxEnemyHP = 30;
+        else if(difficulty === 'medium') gameState.maxEnemyHP = 60;
+        else gameState.maxEnemyHP = 100;
+
+        gameState.enemyHP = gameState.maxEnemyHP;
+
+        updateUI();
+        showScreen('battle');
+        nextTurn();
+    }
+
+    function updateUI() {
+        // Update HP bars
+        const enemyPercent = (gameState.enemyHP / gameState.maxEnemyHP) * 100;
+        const playerPercent = (gameState.playerHP / gameState.maxPlayerHP) * 100;
+        
+        document.getElementById('enemy-hp-fill').style.width = `${Math.max(0, enemyPercent)}%`;
+        document.getElementById('player-hp-fill').style.width = `${Math.max(0, playerPercent)}%`;
+        
+        document.getElementById('enemy-hp-text').innerText = `${Math.max(0, gameState.enemyHP)}/${gameState.maxEnemyHP}`;
+        document.getElementById('player-hp-text').innerText = `${Math.max(0, gameState.playerHP)}/${gameState.maxPlayerHP}`;
+    }
+
+    function nextTurn() {
+        // Pick 2 random unused questions
+        const availableQuestions = questionBank.filter(q => !gameState.questionsUsed.includes(q.q));
+        
+        if (availableQuestions.length === 0 || gameState.enemyHP <= 0) {
+            checkEndGame();
+            return;
+        }
+
+        // Shuffle and pick 2 (or 1 if only 1 left)
+        const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
+        gameState.currentQuestions = shuffled.slice(0, 2);
+        
+        renderQuestions();
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('question-area');
+        container.innerHTML = '';
+        document.getElementById('dice-display').innerText = '';
+
+        gameState.currentQuestions.forEach((qObj, qIdx) => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.innerHTML = `<p>${qObj.q}</p>`;
+            
+            qObj.options.forEach((opt, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(qIdx, optIdx);
+                card.appendChild(btn);
+            });
+            container.appendChild(card);
+        });
+    }
+
+    function handleAnswer(qIdx, selectedIdx) {
+        const question = gameState.currentQuestions[qIdx];
+        const isCorrect = (selectedIdx === question.correct);
+        
+        // Mark as used
+        gameState.questionsUsed.push(question.q);
+
+        if (isCorrect) {
+            // Roll Dice 6-10
+            const roll = Math.floor(Math.random() * (10 - 6 + 1)) + 6;
+            gameState.enemyHP -= roll;
+            document.getElementById('battle-log').innerText = `Correct! You rolled a ${roll}!`;
+            document.getElementById('dice-display').innerText = `🎲 ${roll}`;
+            document.getElementById('dice-display').style.color = "gold";
+        } else {
+            // Player takes damage (Fixed 10 if wrong)
+            gameState.playerHP -= 10;
+            document.getElementById('battle-log').innerText = `Wrong! The monster strikes back!`;
+            document.getElementById('dice-display').innerText = `💥 -10 HP`;
+            document.getElementById('dice-display').style.color = "red";
+        }
+
+        updateUI();
+
+        // Check if game ends immediately
+        if (gameState.enemyHP <= 0) {
+            setTimeout(() => endGame(true), 1000);
+        } else if (gameState.playerHP <= 0) {
+            setTimeout(() => endGame(false), 1000);
+        } else {
+            // If all questions for this turn are answered, go to next turn
+            // Note: In this simple version, we wait for both questions to be answered 
+            // to progress, but to keep it simple, we'll just proceed after each click 
+            // but limit the number of questions displayed.
+            // To make it "2 questions per turn", we'll check if we've processed the current set.
+            
+            // For better UX, let's just move to next turn after a short delay
+            // but we need to ensure we don't skip questions.
+            // Let's use a simple approach: the turn only advances when we've handled 2 questions.
+            // We will add a counter.
+            
+            if (!window.turnCounter) window.turnCounter = 0;
+            window.turnCounter++;
+
+            if (window.turnCounter >= 2) {
+                window.turnCounter = 0;
+                setTimeout(nextTurn, 1500);
+            }
+        }
+    }
+
+    function checkEndGame() {
+        if (gameState.enemyHP <= 0) endGame(true);
+        else if (gameState.playerHP <= 0) endGame(false);
+        else if (gameState.questionsUsed.length >= 20) endGame(false); // Out of questions
+    }
+
+    function endGame(isVictory) {
+        showScreen('end');
+        const title = document.getElementById('end-title');
+        const msg = document.getElementById('end-message');
+
+        if (isVictory) {
+            title.innerText = "VICTORY!";
+            title.style.color = "var(--success)";
+            msg.innerText = `You defeated the monster on ${gameState.difficulty} mode!`;
+        } else {
+            title.innerText = "DEFEAT...";
+            title.style.color = "var(--danger)";
+            msg.innerText = "You ran out of health or questions. Try again!";
+        }
+    }
+</script>
+
+</body>
+</html>
