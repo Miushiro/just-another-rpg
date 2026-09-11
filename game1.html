@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tense Slayer RPG</title>
+    <title>Tense Slayer: 8-Bit Edition</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
         :root {
-            --bg-color: #1a1a2e;
-            --card-bg: #16213e;
-            --accent: #e94560;
-            --text: #e9ecef;
-            --success: #4e9a06;
-            --danger: #a40000;
+            --bg-color: #080808;
+            --card-bg: #1a1a2e;
+            --accent: #00ff41; /* Retro Matrix/Terminal Green */
+            --text: #ffffff;
+            --danger: #ff003c;
+            --player-color: #00d4ff;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Press Start 2P', cursive; /* 8-bit Font */
             background-color: var(--bg-color);
             color: var(--text);
             display: flex;
@@ -23,17 +25,21 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            overflow: hidden;
+            /* Scanline effect for retro feel */
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
         }
 
         #game-container {
             width: 90%;
             max-width: 600px;
             background: var(--card-bg);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 2px solid #0f3460;
+            padding: 30px;
+            border: 4px solid #fff;
+            box-shadow: 10px 10px 0px #000;
             text-align: center;
+            position: relative;
         }
 
         .hidden { display: none !important; }
@@ -43,129 +49,142 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
-            padding: 10px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
+            font-size: 0.6rem;
         }
 
         .hp-container {
             width: 100%;
             background: #333;
-            height: 20px;
-            border-radius: 10px;
+            height: 15px;
+            border: 2px solid #fff;
             margin: 5px 0;
-            overflow: hidden;
         }
 
-        .hp-fill {
-            height: 100%;
-            width: 100%;
-            transition: width 0.5s ease-in-out;
-        }
-
+        .hp-fill { height: 100%; transition: width 0.3s ease; }
         #enemy-hp-fill { background-color: var(--danger); }
-        #player-hp-fill { background-color: var(--success); }
+        #player-hp-fill { background-color: var(--player-color); }
 
         /* Screens */
-        .screen { animation: fadeIn 0.5s; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        h1 { font-size: 1.2rem; color: var(--accent); margin-bottom: 30px; line-height: 1.5; }
+        p { font-size: 0.7rem; line-height: 1.6; }
 
         button {
-            background: #0f3460;
-            color: white;
-            border: 1px solid var(--accent);
-            padding: 10px 20px;
-            margin: 10px;
-            border-radius: 5px;
+            font-family: 'Press Start 2P', cursive;
+            background: #000;
+            color: #fff;
+            border: 3px solid #fff;
+            padding: 15px;
+            margin: 10px 0;
+            width: 100%;
             cursor: pointer;
-            font-size: 1rem;
-            transition: 0.3s;
+            font-size: 0.6rem;
+            transition: transform 0.1s;
         }
 
         button:hover {
             background: var(--accent);
+            color: #000;
+            transform: scale(1.02);
         }
 
-        .option-btn {
-            display: block;
-            width: 100%;
-            text-align: left;
-            margin: 10px 0;
-        }
+        button:active { transform: scale(0.98); }
 
-        /* Battle Log */
+        /* Battle Elements */
         #battle-log {
-            font-style: italic;
-            color: #aaa;
+            font-size: 0.5rem;
             height: 40px;
-            margin: 10px 0;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        #dice-display {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            height: 30px;
         }
 
         .question-card {
-            background: #0f3460;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 10px;
-            text-align: left;
+            background: #000;
+            border: 2px solid var(--accent);
+            padding: 20px;
+            margin-top: 10px;
         }
 
-        .dice-roll-anim {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: gold;
+        .question-text {
+            font-size: 0.7rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
+
+        /* Animations */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(-1deg); }
+            40% { transform: translate(3px, 2px) rotate(1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            80% { transform: translate(3px, 1px) rotate(-1deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+        .shake { animation: shake 0.3s; }
+
     </style>
 </head>
 <body>
 
+<!-- Audio Elements -->
+<!-- BGM: 8-bit loop from a public source -->
+<audio id="bgm" loop>
+    <source src="https://assets.mixkit.co/music/preview/mixkit-retro-game-8-bit-loop-2843.mp3" type="audio/mpeg">
+</audio>
+<!-- Sound Effects -->
+<audio id="sfx-correct"><source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-win-2045.mp3" type="audio/mpeg"></audio>
+<audio id="sfx-wrong"><source src="https://assets.mixkit.co/sfx/preview/mixkit-retro-game-lose-2044.mp3" type="audio/mpeg"></audio>
+
 <div id="game-container">
     <!-- START SCREEN -->
     <div id="start-screen" class="screen">
-        <h1>Tense Slayer</h1>
-        <p>Defeat the monsters by mastering English Tenses!</p>
-        <p>Select Difficulty:</p>
-        <button onclick="startGame('easy')">Easy (30 HP)</button>
-        <button onclick="startGame('medium')">Medium (60 HP)</button>
-        <button onclick="startGame('hard')">Hard (100 HP)</button>
+        <h1>TENSE SLAYER<br>8-BIT EDITION</h1>
+        <p>Master English tenses to defeat the boss!</p>
+        <br>
+        <p>SELECT DIFFICULTY:</p>
+        <button onclick="startGame('easy')">EASY (30 HP)</button>
+        <button onclick="startGame('medium')">MEDIUM (60 HP)</button>
+        <button onclick="startGame('hard')">HARD (100 HP)</button>
     </div>
 
     <!-- BATTLE SCREEN -->
     <div id="battle-screen" class="screen hidden">
         <div class="stats-bar">
             <div style="width: 45%;">
-                <span>Enemy HP</span>
+                ENEMY HP
                 <div class="hp-container"><div id="enemy-hp-fill" class="hp-fill"></div></div>
                 <span id="enemy-hp-text">100/100</span>
             </div>
             <div style="width: 45%;">
-                <span>Your HP</span>
+                PLAYER HP
                 <div class="hp-container"><div id="player-hp-fill" class="hp-fill"></div></div>
                 <span id="player-hp-text">50/50</span>
             </div>
         </div>
 
-        <div id="battle-log">A wild monster appears!</div>
-        <div id="dice-display" class="dice-roll-anim"></div>
+        <div id="battle-log">BATTLE START!</div>
+        <div id="dice-display"></div>
 
-        <div id="question-area">
-            <!-- Questions will be injected here -->
+        <div id="question-area" class="question-card">
+            <!-- Question content injected here -->
         </div>
     </div>
 
-    <!-- GAME OVER SCREEN -->
+    <!-- END SCREEN -->
     <div id="end-screen" class="screen hidden">
-        <h1 id="end-title">Victory!</h1>
+        <h1 id="end-title">GAME OVER</h1>
         <p id="end-message"></p>
-        <button onclick="location.reload()">Play Again</button>
+        <br>
+        <button onclick="location.reload()">RETRY</button>
     </div>
 </div>
 
 <script>
-    // 20 Questions Bank
     const questionBank = [
         { q: "She ___ (eat) breakfast every morning.", options: ["eats", "is eating", "ate"], correct: 0 },
         { q: "They ___ (watch) a movie right now.", options: ["watch", "are watching", "watched"], correct: 1 },
@@ -183,7 +202,7 @@
         { q: "They ___ (play) football when it started to rain.", options: ["were playing", "are playing", "played"], correct: 0 },
         { q: "If it rains, we ___ (stay) at home.", options: ["stay", "will stay", "would stay"], correct: 1 },
         { q: "Last year, I ___ (travel) to Italy.", options: ["travel", "have traveled", "traveled"], correct: 2 },
-        { q: "He ___ (always/lose) his keys! It's annoying.", options: ["always loses", "is always losing", "lost"], correct: 1 },
+        { q: "He ___ (always/lose) his keys!", options: ["always loses", "is always losing", "lost"], correct: 1 },
         { q: "How long ___ you ___ (study) English?", options: ["do/study", "have/been studying", "are/studying"], correct: 1 },
         { q: "The sun ___ (rise) in the east.", options: ["rises", "is rising", "rose"], correct: 0 },
         { q: "I ___ (read) that book three times already.", options: ["read", "have read", "am reading"], correct: 1 }
@@ -196,8 +215,14 @@
         maxEnemyHP: 0,
         difficulty: '',
         questionsUsed: [],
-        currentQuestions: []
+        currentQuestion: null
     };
+
+    // Audio references
+    const bgm = document.getElementById('bgm');
+    const sfxCorrect = document.getElementById('sfx-correct');
+    const sfxWrong = document.getElementById('sfx-wrong');
+    const container = document.getElementById('game-container');
 
     const screens = {
         start: document.getElementById('start-screen'),
@@ -211,6 +236,10 @@
     }
 
     function startGame(difficulty) {
+        // Start Music
+        bgm.volume = 0.3;
+        bgm.play().catch(e => console.log("Audio autoplay prevented"));
+
         gameState.difficulty = difficulty;
         gameState.questionsUsed = [];
         gameState.playerHP = 50;
@@ -223,128 +252,113 @@
 
         updateUI();
         showScreen('battle');
-        nextTurn();
+        loadNextQuestion();
     }
 
     function updateUI() {
-        // Update HP bars
         const enemyPercent = (gameState.enemyHP / gameState.maxEnemyHP) * 100;
         const playerPercent = (gameState.playerHP / gameState.maxPlayerHP) * 100;
         
         document.getElementById('enemy-hp-fill').style.width = `${Math.max(0, enemyPercent)}%`;
         document.getElementById('player-hp-fill').style.width = `${Math.max(0, playerPercent)}%`;
-        
         document.getElementById('enemy-hp-text').innerText = `${Math.max(0, gameState.enemyHP)}/${gameState.maxEnemyHP}`;
         document.getElementById('player-hp-text').innerText = `${Math.max(0, gameState.playerHP)}/${gameState.maxPlayerHP}`;
     }
 
-    function nextTurn() {
-        // Pick 2 random unused questions
-        const availableQuestions = questionBank.filter(q => !gameState.questionsUsed.includes(q.q));
+    function loadNextQuestion() {
+        const available = questionBank.filter(q => !gameState.questionsUsed.includes(q.q));
         
-        if (availableQuestions.length === 0 || gameState.enemyHP <= 0) {
+        if (available.length === 0 || gameState.enemyHP <= 0 || gameState.playerHP <= 0) {
             checkEndGame();
             return;
         }
 
-        // Shuffle and pick 2 (or 1 if only 1 left)
-        const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
-        gameState.currentQuestions = shuffled.slice(0, 2);
-        
-        renderQuestions();
+        // Pick one random question
+        gameState.currentQuestion = available[Math.floor(Math.random() * available.length)];
+        renderQuestion();
     }
 
-    function renderQuestions() {
-        const container = document.getElementById('question-area');
-        container.innerHTML = '';
+    function renderQuestion() {
+        const area = document.getElementById('question-area');
+        area.innerHTML = '';
         document.getElementById('dice-display').innerText = '';
+        document.getElementById('battle-log').innerText = "CHOOSE YOUR ANSWER!";
 
-        gameState.currentQuestions.forEach((qObj, qIdx) => {
-            const card = document.createElement('div');
-            card.className = 'question-card';
-            card.innerHTML = `<p>${qObj.q}</p>`;
-            
-            qObj.options.forEach((opt, optIdx) => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerText = opt;
-                btn.onclick = () => handleAnswer(qIdx, optIdx);
-                card.appendChild(btn);
-            });
-            container.appendChild(card);
+        const qText = document.createElement('div');
+        qText.className = 'question-text';
+        qText.innerText = gameState.currentQuestion.q;
+        area.appendChild(qText);
+
+        gameState.currentQuestion.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.onclick = () => handleAnswer(idx);
+            area.appendChild(btn);
         });
     }
 
-    function handleAnswer(qIdx, selectedIdx) {
-        const question = gameState.currentQuestions[qIdx];
-        const isCorrect = (selectedIdx === question.correct);
-        
-        // Mark as used
-        gameState.questionsUsed.push(question.q);
+    function handleAnswer(selectedIdx) {
+        const isCorrect = (selectedIdx === gameState.currentQuestion.correct);
+        gameState.questionsUsed.push(gameState.currentQuestion.q);
 
         if (isCorrect) {
             // Roll Dice 6-10
             const roll = Math.floor(Math.random() * (10 - 6 + 1)) + 6;
             gameState.enemyHP -= roll;
-            document.getElementById('battle-log').innerText = `Correct! You rolled a ${roll}!`;
+            
+            sfxCorrect.play();
+            document.getElementById('battle-log').innerText = `HIT! ROLL: ${roll}`;
             document.getElementById('dice-display').innerText = `🎲 ${roll}`;
-            document.getElementById('dice-display').style.color = "gold";
+            document.getElementById('dice-display').style.color = "var(--accent)";
         } else {
-            // Player takes damage (Fixed 10 if wrong)
+            // Player takes damage
             gameState.playerHP -= 10;
-            document.getElementById('battle-log').innerText = `Wrong! The monster strikes back!`;
-            document.getElementById('dice-display').innerText = `💥 -10 HP`;
-            document.getElementById('dice-display').style.color = "red";
+            
+            sfxWrong.play();
+            document.getElementById('battle-log').innerText = `MISS! YOU TOOK 10 DMG`;
+            document.getElementById('dice-display').innerText = `💥 -10`;
+            document.getElementById('dice-display').style.color = "var(--danger)";
+            
+            // Visual shake effect
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), 300);
         }
 
         updateUI();
 
-        // Check if game ends immediately
+        // Check game state
         if (gameState.enemyHP <= 0) {
-            setTimeout(() => endGame(true), 1000);
+            setTimeout(() => endGame(true), 600);
         } else if (gameState.playerHP <= 0) {
-            setTimeout(() => endGame(false), 1000);
+            setTimeout(() => endGame(false), 600);
         } else {
-            // If all questions for this turn are answered, go to next turn
-            // Note: In this simple version, we wait for both questions to be answered 
-            // to progress, but to keep it simple, we'll just proceed after each click 
-            // but limit the number of questions displayed.
-            // To make it "2 questions per turn", we'll check if we've processed the current set.
-            
-            // For better UX, let's just move to next turn after a short delay
-            // but we need to ensure we don't skip questions.
-            // Let's use a simple approach: the turn only advances when we've handled 2 questions.
-            // We will add a counter.
-            
-            if (!window.turnCounter) window.turnCounter = 0;
-            window.turnCounter++;
-
-            if (window.turnCounter >= 2) {
-                window.turnCounter = 0;
-                setTimeout(nextTurn, 1500);
-            }
+            // IMMEDIATE REPLACEMENT: Load next question after a tiny delay
+            setTimeout(loadNextQuestion, 800);
         }
     }
 
     function checkEndGame() {
         if (gameState.enemyHP <= 0) endGame(true);
         else if (gameState.playerHP <= 0) endGame(false);
-        else if (gameState.questionsUsed.length >= 20) endGame(false); // Out of questions
+        else endGame(false); // Out of questions
     }
 
     function endGame(isVictory) {
         showScreen('end');
         const title = document.getElementById('end-title');
         const msg = document.getElementById('end-message');
+        
+        // Stop Music
+        bgm.pause();
 
         if (isVictory) {
             title.innerText = "VICTORY!";
-            title.style.color = "var(--success)";
-            msg.innerText = `You defeated the monster on ${gameState.difficulty} mode!`;
+            title.style.color = "var(--accent)";
+            msg.innerText = "BOSS DEFEATED!";
         } else {
             title.innerText = "DEFEAT...";
             title.style.color = "var(--danger)";
-            msg.innerText = "You ran out of health or questions. Try again!";
+            msg.innerText = "YOU DIED...";
         }
     }
 </script>
